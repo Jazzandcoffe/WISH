@@ -34,7 +34,10 @@ int main(void)
 
 int main()
 {
+	if (true)
+	{
+		akjdfgh
+	}
 	return 0;
 }
-
 //Herman test
