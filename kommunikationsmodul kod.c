@@ -30,15 +30,3 @@ int main(void)
 	{
 	}
 }
-
-
-int main()
-{
-	if (true)
-	{
-		akjdfgh
-			hej
-	}
-	return 0;
-}
-//Herman test
