@@ -19,11 +19,23 @@ char SPI_Transmit(char cData){
 	return SPDR; 
 }
 
+//Sätter tiden och startar watchdog timer i interrupt-mode 64 ms.
+void WDT_Init(void)
+{
+	__disable_interrupt();
+	__watchdog_reset();
+	//Start timed sequence
+	WDTCSR |= (1<<WDCE) | (0<<WDE) | (1<<WDIE);
+	// Set new prescaler (time-out) value = 8k cycles (64 ms)
+	WDTCSR = (1<<WDP1);
+	__enable_interrupt();
+}
+
 int main(void)
 {
 	SPI_init();
 	
-	_enable_interrupt(); // set Global Interrupt Enable
+	__enable_interrupt(); // set Global Interrupt Enable
 	
 	// loop forever
 	for (;;)
