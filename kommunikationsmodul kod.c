@@ -31,14 +31,44 @@ void WDT_Init(void)
 	__enable_interrupt();
 }
 
+//Avbrottsvektorn till watchdog time-out interrupt
+ISR(WDT_vect)
+{
+	transmit = 1;
+}
+
+//Globala variabler
+volatile int init_transmit; //För att hålla reda på när vi ska använda buss.
+volatile int transmit_buffer; //Data som ska skickas
+volatile int recieve_buffer; //Data som tas emot
+
 int main(void)
 {
 	SPI_init();
 	
 	__enable_interrupt(); // set Global Interrupt Enable
 	
+	transmit_buffer = 0;
+	
 	// loop forever
 	for (;;)
 	{
+		//Testkod för bussen
+		if (transmit_buffer == 0xF)
+		{
+			transmit_buffer = 0x0;
+		}
+		else
+		{
+			transmit_buffer++;
+		}
+		
+		if(init_transmit==1)
+		{
+			PORTB = (0<<PB4);
+			recieve_buffer = SPI_Transmit(transmit_buffer);
+			PORTB = (1<<PB4);
+			transmit = 0; 
+		}
 	}
 }
