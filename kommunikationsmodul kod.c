@@ -45,6 +45,7 @@ volatile int recieve_buffer; //Data som tas emot
 int main(void)
 {
 	SPI_init();
+	WDT_Init();
 	
 	__enable_interrupt(); // set Global Interrupt Enable
 	
@@ -53,7 +54,11 @@ int main(void)
 	// loop forever
 	for (;;)
 	{
-		//Testkod för bussen
+		
+		
+		if(init_transmit==1)
+		{
+			//Testkod för bussen
 		if (transmit_buffer == 0xF)
 		{
 			transmit_buffer = 0x0;
@@ -62,13 +67,12 @@ int main(void)
 		{
 			transmit_buffer++;
 		}
-		
-		if(init_transmit==1)
-		{
+			
 			PORTB = (0<<PB4);
 			recieve_buffer = SPI_Transmit(transmit_buffer);
 			PORTB = (1<<PB4);
-			transmit = 0; 
+			transmit = 0;
+			WDT_Init();
 		}
 	}
 }
