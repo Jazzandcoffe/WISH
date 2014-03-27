@@ -50,6 +50,12 @@ ISR(WDT_vect)
 {
 	init_transmit = 1;
 }
+ISR(INT0)
+{
+	PORTB = (0<<PB4);
+	SPI_Transmit(0x00);
+	PORTB = (1<<PB4);
+}
 
 int main(void)
 {
