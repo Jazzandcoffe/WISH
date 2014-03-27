@@ -13,6 +13,8 @@
 volatile int init_transmit; //För att hålla reda på när vi ska använda buss.
 volatile int transmit_buffer; //Data som ska skickas
 volatile int recieve_buffer; //Data som tas emot
+volatile int auto_or_manual; //autonomt läge = 0/manuellt läge = 1
+
 
 //Initierar SPI Master
 void SPI_init(void){
@@ -53,6 +55,14 @@ ISR(TIMER1_OVF_vect)
 
 ISR(INT0_vect)
 {
+	if(auto_or_manual == 0)
+	{
+		auto_or_manual = 1;
+	}
+	else
+	{
+		auto_or_manual = 0;
+	}
 	PORTB = (0<<PB4);
 	SPI_Transmit(0x00);
 	PORTB = (1<<PB4);
@@ -60,32 +70,42 @@ ISR(INT0_vect)
 
 int main(void)
 {
+
 	SPI_init();
 	timer1_init();
-
 	sei(); // set Global Interrupt Enable
-
-	transmit_buffer = 0;
+	auto_or_manual = 1;
+	transmit_buffer = 0; //Testkod för bussen
 
 	// loop forever
 	for (;;)
 	{
-		if(init_transmit==1)
+		if(auto_or_manual == 0)
 		{
-			//Testkod för bussen
-			if (transmit_buffer == 0xF)
+			if(init_transmit==1)
 			{
-				transmit_buffer = 0x0;
-			}
-			else
-			{
-				transmit_buffer++;
-			}
+			
+			
+			
+				//Testkod för bussen
+				if (transmit_buffer == 0xF)
+				{
+					transmit_buffer = 0x0;
+				}
+				else
+				{
+					transmit_buffer++;
+				}
 
-			PORTB = (0<<PB4);
-			recieve_buffer = SPI_Transmit(transmit_buffer);
-			PORTB = (1<<PB4);
-			init_transmit = 0;
+				PORTB = (0<<PB4);
+				recieve_buffer = SPI_Transmit(transmit_buffer);
+				PORTB = (1<<PB4);
+				init_transmit = 0;
+			}
+		}
+		else
+		{
+			
 		}
 	}
 }
