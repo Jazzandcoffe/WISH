@@ -8,7 +8,6 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/wdt.h>
 
 //Globala variabler
 volatile int init_transmit; //För att hålla reda på när vi ska använda buss.
@@ -33,23 +32,25 @@ char SPI_Transmit(char cData){
 	return SPDR;
 }
 
-//Sätter tiden och startar watchdog timer i interrupt-mode 64 ms.
-void WDT_Init(void)
+//initierar timer1
+void timer1_init()
 {
-	cli();
-	wdt_reset();
-	//Start timed sequence
-	WDTCSR |= (1<<WDCE) | (1<<WDE) | (1<<WDIE);
-	// Set new prescaler (time-out) value = 8k cycles (64 ms)
-	WDTCSR = (1<<WDP1) | (0<<WDE);
-	sei();
+	//Timer prescaler = 8
+	TCCR1B |= (1<<CS11);
+	//Start timer
+	TCNT1 = 0;
+	//Enable overflow interrupt
+	TIMSK1 |= (1<<TOIE1);
 }
 
-//Avbrottsvektorn till watchdog time-out interrupt
-ISR(WDT_vect)
+
+
+//Avbrottsvektorn till timer overflow
+ISR(TIMER1_OVF_vect)
 {
 	init_transmit = 1;
 }
+
 ISR(INT0_vect)
 {
 	PORTB = (0<<PB4);
@@ -59,9 +60,8 @@ ISR(INT0_vect)
 
 int main(void)
 {
-
 	SPI_init();
-	//WDT_Init();
+	timer1_init();
 
 	sei(); // set Global Interrupt Enable
 
@@ -70,8 +70,8 @@ int main(void)
 	// loop forever
 	for (;;)
 	{
-		//if(init_transmit==1)
-		//{
+		if(init_transmit==1)
+		{
 			//Testkod för bussen
 			if (transmit_buffer == 0xF)
 			{
@@ -85,8 +85,7 @@ int main(void)
 			PORTB = (0<<PB4);
 			recieve_buffer = SPI_Transmit(transmit_buffer);
 			PORTB = (1<<PB4);
-			//init_transmit = 0;
-			//WDT_Init();
-		//}
+			init_transmit = 0;
+		}
 	}
 }
