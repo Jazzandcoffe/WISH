@@ -3,8 +3,12 @@
 #include <avr/interrupt.h>
 
 //Globala variabler
-volatile int transmit_buffer; //Data som ska skickas
-volatile int recieve_buffer; //Data som tas emot
+volatile char transmit_buffer; //Data som ska skickas
+volatile char recieve_buffer; //Data som tas emot
+volatile char type; //typ-byte till bussprotokoll
+volatile char data; //data-byte till bussprotokoll
+volatile char check; //check-byte till bussprotokoll
+volatile int SPI_count; //Håller reda på om busspaket är type, data eller check
 
 //Initierar SPI Slave
 void SPI_init(void)
@@ -28,7 +32,10 @@ ISR(SPI_STC_vect)
 {
 	recieve_buffer = SPI_Transmit();
 
-	transmit_buffer = recieve_buffer; //testrad
+	/*
+	Här ska det vara kod för att spara undan recieve buffer och
+	lägga in ny data i transmit_buffer
+	*/
 
 	SPDR =  transmit_buffer;
 }
