@@ -75,6 +75,27 @@ ISR(INT0_vect)
 	PORTB = (1<<PB4);
 }
 
+char ss_sensor() 	
+	// SS för sensor, vi skickar aldrig, 
+	// så denna funktion läser vad som 
+	// sensor lagt på bussen
+{
+	PORTB = (0 << PB3);
+	recieve_buffer = SPI_transmit(0x00);
+	PORTB = (1 << PB3);
+	return recieve_buffer;
+}
+
+char ss_styr(char to_send)
+{
+	// SS för styr, vi skickar sensordata,
+	// tar emot styrbeslut.(som ska skickas via BT)
+	PORTB = (0 << PB4);
+	recieve_buffer = SPI_transmit(to_send);
+	PORTB = (1 << PB4);
+	return recieve_buffer;
+}
+
 int main(void)
 {
 
@@ -113,7 +134,7 @@ int main(void)
 					av styrbeslut och sensorvärden
 					*/
 				}
-			
+
 			}
 		}
 		//Manuellt läge
