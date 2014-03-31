@@ -10,12 +10,8 @@
 #include <avr/interrupt.h>
 
 //Globala variabler
-volatile char	transmit_buffer;	//Data som ska skickas
-volatile char	recieve_buffer;		//Data som tas emot
 volatile int	package_counter;	//Håller reda på vilken typ av data som förväntas på bussen. Förväntar ny sändning då == 0
-volatile char	type_recieved;		//SPI
-volatile char	data_recieved;		//SPI
-volatile char	check_recieved;		//SPI
+volatile char	transmit_buffer;	//Data som ska skickas
 volatile char	type_transmit;		//SPI
 volatile char	data_transmit;		//SPI
 volatile char	check_transmit;		//SPI
@@ -30,29 +26,11 @@ void SPI_init(void)
 	SPCR = (1<<SPE); 
 }
 
-//Transmit function. cData på MISO. Return MOSI.
-char SPI_read(void)
-{
-	while(!(SPSR & (1<<SPIF)))
-	;
-	return SPDR;
-}
-
 
 // Returnerar en "checksum" = type XOR data.
 char check_creator(char type,char data)
 {
 	return type^data;
-}
-
-
-// check_decoder returnerar 1 om check == type XOR data, annars 0.  
-unsigned int check_decoder(char type, char data, char check)
-{
-	char is_check = type^data;
-	if(is_check == check)
-	return 1;
-	else return 0;
 }
 
 //
@@ -64,22 +42,16 @@ void SPI_write()
 	
 	check_transmit = check_creator(type_transmit, data_transmit);
 	
-	if ( check_decoder(type_recieved, data_recieved, check_recieved) )
-	{
-	ny = type_recieved;
-	ny = data_recieved;
-	}
 	*/
 }
 
 // Denna funktion hanterar inkommande och utgående data på bussen.
-void SPI_decoder()
+void SPI_transmitter()
 {
 	switch(package_counter)
 	{
 		// type
 		case 0: 
-		type_recieved = recieve_buffer;
 		transmit_buffer = data_transmit;
 		
 		//uppdatera package_counter
@@ -87,7 +59,6 @@ void SPI_decoder()
 		
 		// data
 		case 1: 
-		data_recieved = recieve_buffer;
 		transmit_buffer = check_transmit;
 		
 		//uppdatera package_counter
@@ -95,7 +66,6 @@ void SPI_decoder()
 		
 		// check
 		case 3: 
-		check_recieved = recieve_buffer;
 		SPI_write();
 		transmit_buffer = type_transmit;
 		
@@ -112,9 +82,7 @@ void SPI_decoder()
  */
 ISR(SPI_STC_vect)
 {
-	recieve_buffer = SPI_read();
-	SPI_decoder();
-	SPDR =  transmit_buffer;
+	SPI_transmitter();
 	//reset timer1
 	TCNT1 = 0;
 }
@@ -141,6 +109,8 @@ int main(void)
 {
 	//Initiera SPI
 	SPI_init();
+	package_counter = 0;
+	timer1_init();
 	// set Global Interrupt Enabel
 	sei();
 	// loop forever
