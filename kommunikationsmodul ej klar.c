@@ -5,23 +5,23 @@
 *  Author: hermo276
 */
 
-#define F_CPU = 14745600ul
+#define F_CPU 14745600UL
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include <avr/delay.h>
-
+#include <util/delay.h>
 
 //Globala variabler
-volatile int 	init_transmit; 	//För att hålla reda på när vi ska använda buss.
-volatile char 	transmit_buffer;//Data som ska skickas
-volatile char 	recieve_buffer; //Data som tas emot
-volatile int 	auto_or_manual; //autonomt läge = 0/manuellt läge = 1
-volatile char 	type_sens; 		//typ-byte till protokollet
-volatile char 	data_sens; 		//data-byte till protokollet
-volatile char 	ckeck_sens; 	//check-byte till protokollet
-volatile char 	type_styr; 		//typ-byte till protokollet
-volatile char 	data_styr; 		//data-byte till protokollet
-volatile char 	check_styr; 	//ckeck-byte till protokollet
+volatile int init_transmit; //För att hålla reda på när vi ska använda buss.
+volatile char transmit_buffer; //Data som ska skickas
+volatile char recieve_buffer; //Data som tas emot
+volatile int auto_or_manual; //autonomt läge = 0/manuellt läge = 1
+volatile char type_sens; //typ-byte till protokollet
+volatile char data_sens; //data-byte till protokollet
+volatile char check_sens; //check-byte till protokollet
+volatile char type_styr; //typ-byte till protokollet
+volatile char data_styr; //data-byte till protokollet
+volatile char check_styr; //ckeck-byte till protokollet
 
 
 //Initierar SPI Master
@@ -35,7 +35,7 @@ void SPI_init(void)
 }
 
 //Transmit function. cData på MOSI. Return MISO.
-char SPI_Transmit(char cData)
+char SPI_transmit(char cData)
 {
 	SPDR = cData;
 	while(!(SPSR & (1<<SPIF)))
@@ -73,7 +73,7 @@ ISR(INT0_vect)
 		auto_or_manual = 0;
 	}
 	PORTB = (0<<PB4);
-	SPI_Transmit(0x00);
+	SPI_transmit(0x00);
 	PORTB = (1<<PB4);
 }
 
@@ -110,6 +110,12 @@ int main(void)
 	// set Global Interrupt Enable
 	sei(); 
 	auto_or_manual = 1;
+	
+	//testkod
+	type_styr = 0x08;
+	data_styr = 0x0F;
+	check_styr = 0xFF;
+	//testkod
 
 	// loop forever
 	for (;;)
@@ -119,24 +125,22 @@ int main(void)
 		{
 			if(init_transmit==1)
 			{
-				for (i=0;i<10;i++)
+				for (int i=0;i<10;i++)
 				{
 					type_sens = ss_sensor();
-					_delay_us(35);
+					_delay_us(10);
 					data_sens = ss_sensor();
-					_delay_us(35);
+					_delay_us(10);
 					check_sens = ss_sensor();
-					_delay_us(35);
 					/*
 					Här ska det vara kod för ckeck
 					*/
 					//if(check_ok)
-					type_styr = ss_styr(type);
-					_delay_us(35);
-					data_styr = ss_sensor(data);
-					_delay_us(35);
-					check_styr = ss_sensor(ckeck);
-					_delay_us(35);
+					type_styr = ss_styr(type_sens);
+					_delay_us(10);
+					data_styr = ss_sensor(data_sens);
+					_delay_us(10);
+					check_styr = ss_sensor(check_sens);
 					/*
 					Här ska det vara kod för check
 					*/
@@ -146,7 +150,8 @@ int main(void)
 					av styrbeslut och sensorvärden
 					*/
 				}
-
+				
+				init_transmit = 0;
 			}
 		}
 		//Manuellt läge
@@ -158,12 +163,12 @@ int main(void)
 				Här ska det vara kod för bluetoothsändning 
 				av styrbeslut och sensorvärden
 				*/
-				type_styr = ss_styr(type);
-				_delay_us(35);
-				data_styr = ss_sensor(data);
-				_delay_us(35);
-				check_styr = ss_sensor(ckeck);
-				
+				type_sens = ss_styr(type_styr);
+				_delay_us(10);
+				data_sens = ss_styr(data_styr);
+				_delay_us(10);
+				check_sens = ss_styr(check_styr);
+				init_transmit = 0;
 			}
 		}
 	}
