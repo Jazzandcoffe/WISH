@@ -128,17 +128,17 @@ int main(void)
 				for (int i=0;i<10;i++)
 				{
 					type_sens = ss_sensor();
-					_delay_us(10);
+					_delay_us(20);
 					data_sens = ss_sensor();
-					_delay_us(10);
+					_delay_us(20);
 					check_sens = ss_sensor();
 					
 					if(check_decoder(type_sens, data_sens, check_sens))
 					{
 						type_styr = ss_styr(type_sens);
-						_delay_us(10);
+						_delay_us(20);
 						data_styr = ss_sensor(data_sens);
-						_delay_us(10);
+						_delay_us(20);
 						check_styr = ss_sensor(check_sens);
 						/*
 						Här ska det vara kod för bluetoothsändning
@@ -162,9 +162,9 @@ int main(void)
 				av styrbeslut och sensorvärden
 				*/
 				type_styr = ss_styr(type_styr);
-				_delay_us(10);
+				_delay_us(20);
 				data_styr = ss_styr(data_styr);
-				_delay_us(10);
+				_delay_us(20);
 				check_styr = ss_styr(check_creator(type_styr, data_styr));
 				init_transmit = 0;
 			}

@@ -23,7 +23,7 @@ void SPI_init(void)
 	//spi pins on port b, MISO output, all other input
 	DDRB = (1<<DDB6);
 	// SPI enable, Slave 
-	SPCR = (1<<SPE); 
+	SPCR = (1<<SPE) | (1<<SPIE); 
 }
 
 
@@ -36,13 +36,10 @@ char check_creator(char type,char data)
 //
 void SPI_write()
 {
-	/*
-	type_transmit = ny;
-	data_transmit = ny;
+	type_transmit = 0x0F;
+	data_transmit = 0xFF;
 	
 	check_transmit = check_creator(type_transmit, data_transmit);
-	
-	*/
 }
 
 // Denna funktion hanterar inkommande och utgående data på bussen.
@@ -83,6 +80,7 @@ void SPI_transmitter()
 ISR(SPI_STC_vect)
 {
 	SPI_transmitter();
+	SPDR = transmit_buffer;
 	//reset timer1
 	TCNT1 = 0;
 }
@@ -110,6 +108,8 @@ int main(void)
 	//Initiera SPI
 	SPI_init();
 	package_counter = 0;
+	type_transmit = 0x00;
+	data_transmit = 0x00;
 	timer1_init();
 	// set Global Interrupt Enabel
 	sei();
