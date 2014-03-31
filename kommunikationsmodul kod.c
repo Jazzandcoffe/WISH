@@ -5,21 +5,23 @@
 *  Author: hermo276
 */
 
-
+#define F_CPU = 14745600ul
 #include <avr/io.h>
 #include <avr/interrupt.h>
+#include <avr/delay.h>
+
 
 //Globala variabler
-volatile int init_transmit; //För att hålla reda på när vi ska använda buss.
-volatile char transmit_buffer; //Data som ska skickas
-volatile char recieve_buffer; //Data som tas emot
-volatile int auto_or_manual; //autonomt läge = 0/manuellt läge = 1
-volatile char type_sens; //typ-byte till protokollet
-volatile char data_sens; //data-byte till protokollet
-volatile char ckeck_sens; //check-byte till protokollet
-volatile char type_styr; //typ-byte till protokollet
-volatile char data_styr; //data-byte till protokollet
-volatile char check_styr; //ckeck-byte till protokollet
+volatile int 	init_transmit; 	//För att hålla reda på när vi ska använda buss.
+volatile char 	transmit_buffer;//Data som ska skickas
+volatile char 	recieve_buffer; //Data som tas emot
+volatile int 	auto_or_manual; //autonomt läge = 0/manuellt läge = 1
+volatile char 	type_sens; 		//typ-byte till protokollet
+volatile char 	data_sens; 		//data-byte till protokollet
+volatile char 	ckeck_sens; 	//check-byte till protokollet
+volatile char 	type_styr; 		//typ-byte till protokollet
+volatile char 	data_styr; 		//data-byte till protokollet
+volatile char 	check_styr; 	//ckeck-byte till protokollet
 
 
 //Initierar SPI Master
@@ -116,15 +118,21 @@ int main(void)
 				for (i=0;i<10;i++)
 				{
 					type_sens = ss_sensor();
+					_delay_us(35);
 					data_sens = ss_sensor();
+					_delay_us(35);
 					check_sens = ss_sensor();
+					_delay_us(35);
 					/*
 					Här ska det vara kod för ckeck
 					*/
 					//if(check_ok)
 					type_styr = ss_styr(type);
+					_delay_us(35);
 					data_styr = ss_sensor(data);
+					_delay_us(35);
 					check_styr = ss_sensor(ckeck);
+					_delay_us(35);
 					/*
 					Här ska det vara kod för check
 					*/
@@ -147,9 +155,11 @@ int main(void)
 				av styrbeslut och sensorvärden
 				*/
 				type_styr = ss_styr(type);
+				_delay_us(35);
 				data_styr = ss_sensor(data);
+				_delay_us(35);
 				check_styr = ss_sensor(ckeck);
-
+				
 			}
 		}
 	}
