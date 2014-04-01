@@ -29,7 +29,7 @@ void SPI_init(void)
 	//spi pins on port b, MISO output, all other input
 	DDRB = (1<<DDB6);
 	// SPI enable, Slave 
-	SPCR = (1<<SPE); 
+	SPCR = (1<<SPE) | (1<<SPIE); 
 }
 
 //initierar timer1
@@ -74,10 +74,6 @@ void SPI_decoder()
 	}
 }
 
-//type_transmit = nästkommande_sändning; 
-//data_transmit = nästkommande_sändning;
-check_transmit = check_creator(type_transmit, data_transmit);
-
 /* 
  * Kontroll att mottagen data är ok!
  * Samt uppdatering av räknare för data att skicka
@@ -91,7 +87,7 @@ void SPI_control()
 		case 0x00:
 		// example
 		// sensor_1 = data_recieved;
-		// update_transmit_buffer(); 
+		// update data_transmit och type_transmit
 		case 0x01:
 		case 0x02:
 		case 0x03:
@@ -117,7 +113,8 @@ void SPI_control()
 		// update_transmit_buffer();
 		default:
 		// update_transmit_buffer();			
-		}		
+		}
+		check_transmit = check_creator(type_transmit, data_transmit);
 	}
 	else
 	{
