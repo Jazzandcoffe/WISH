@@ -23,6 +23,36 @@ volatile char	type_styr;		//typ-byte till protokollet
 volatile char	data_styr;		//data-byte till protokollet
 volatile char	check_styr;		//ckeck-byte till protokollet
 
+volatile char	type_bt;
+volatile char	data_bt;
+volatile char	check_bt;
+
+	
+// Initiera USART0 för BT kommunikation.
+void USART0_init(long baud_rate)
+{
+	//ställa in register för kommunikation i 115200Hz
+	UBRR0H = ((F_CPU/16) / baud_rate - 1) >> 8;
+	UBRR0L = ((F_CPU/16) / baud_rate - 1);
+	// Enable receiver and transmitter & their interrupts.
+	UCSR0B = (1<<RXCIE0)|(1<<TXCIE0)|(1<<RXEN0)|(1<<TXEN0);
+	// Set frame format: 8data
+	UCSR0C = (3<<UCSZ00);
+}
+
+// Recieve complete
+void ISR(USART0_RX_vect)
+{
+	
+}
+
+// Transfer complete
+void ISR(USART0_TX)
+{
+	// UDR0 = register för data att sända / ta emot.
+}
+
+
 
 //Initierar SPI Master
 void SPI_init(void)
@@ -33,10 +63,10 @@ void SPI_init(void)
 	SPCR = ((1<<SPE)|(1<<MSTR));
 }
 
-//Transmit function. cData på MOSI. Return MISO.
-char SPI_transmit(char cData)
+//Transmit function. to_send på MOSI. Return MISO.
+char SPI_transmit(char to_send)
 {
-	SPDR = cData;
+	SPDR = to_send;
 	while(!(SPSR & (1<<SPIF)))
 	;
 	return SPDR;
@@ -52,8 +82,6 @@ void timer1_init()
 	//Enable overflow interrupt
 	TIMSK1 |= (1<<TOIE1);
 }
-
-
 
 //Avbrottsvektorn till timer overflow
 ISR(TIMER1_OVF_vect)
@@ -109,7 +137,7 @@ char check_creator(char type,char data)
 
 int main(void)
 {
-
+	USART0_init(115200);
 	SPI_init();
 	timer1_init();
 	// set Global Interrupt Enable
