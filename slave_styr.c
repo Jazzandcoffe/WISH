@@ -29,7 +29,7 @@ void SPI_init(void)
 	//spi pins on port b, MISO output, all other input
 	DDRB = (1<<DDB6);
 	// SPI enable, Slave 
-	SPCR = (1<<SPE); 
+	SPCR = (1<<SPE)|(1<<SPIE); 
 }
 
 //initierar timer1
@@ -44,7 +44,7 @@ void timer1_init()
 }
 
 // Denna funktion hanterar inkommande och utgående data på bussen.
-void SPI_decoder()
+void SPI_transfer_update()
 {
 	switch(package_counter)
 	{
@@ -52,17 +52,17 @@ void SPI_decoder()
 		case 0: 
 		type_recieved = recieve_buffer;
 		transmit_buffer = data_transmit;
-		
 		//uppdatera package_counter
-		package_counter++;
+		package_counter = 1;
+		break;
 		
 		// data
 		case 1: 
 		data_recieved = recieve_buffer;
 		transmit_buffer = check_transmit;
-		
 		//uppdatera package_counter
-		package_counter++;
+		package_counter = 2;
+		break;
 		
 		// check
 		case 3: 
@@ -74,9 +74,12 @@ void SPI_decoder()
 	}
 }
 
-//type_transmit = nästkommande_sändning; 
-//data_transmit = nästkommande_sändning;
-check_transmit = check_creator(type_transmit, data_transmit);
+void update_transmit()
+{
+	// type_transmit = nästkommande_sändning; 
+	// data_transmit = nästkommande_sändning;
+	check_transmit = check_creator(type_transmit, data_transmit);
+}
 
 /* 
  * Kontroll att mottagen data är ok!
@@ -92,31 +95,51 @@ void SPI_control()
 		// example
 		// sensor_1 = data_recieved;
 		// update_transmit_buffer(); 
+		break;
 		case 0x01:
+		break;
 		case 0x02:
+		break;
 		case 0x03:
+		break;
 		case 0x04:
+		break;
 		case 0x05: 
+		break;
 		case 0x06:
+		break;
 		case 0x07:
+		break;
 		case 0x08:
+		break;
 		case 0x09:
-		case 0x0A: 
+		break;
+		case 0x0A:
+		break;
 		case 0x0B:
+		break;
 		case 0x0C:
+		break;
 		case 0x0D:
+		break;
 		case 0x0E:
+		break;
 		case 0x0F: 
+		break;
 		case 0x10:
+		break;
 		case 0x11:
+		break;
 		case 0x12:
-		case 0x13:
+		break;
 		// und so weiter
 		case 0xFF:
 		// sista typen som ska uppdateras
 		// update_transmit_buffer();
+		break;
 		default:
-		// update_transmit_buffer();			
+		// update_transmit_buffer();
+		break;
 		}		
 	}
 	else
@@ -143,15 +166,11 @@ unsigned int check_decoder(char type, char data, char check)
 // Avbrottsvektorn SPI Serial Transfer Complete
 ISR(SPI_STC_vect)
 {
-	// Vänta på att transfer blir klar.
-	while(!(SPSR & (1<<SPIF)))
-	;
-	// Läs av inskiftad data
 	recieve_buffer = SPDR;
 	// Uppdatera SPI Data Register för utskiftning.
 	SPDR = transmit_buffer;
-	// kontroll och hantering av dataflöde
-	SPI_decoder();
+	// kontroll och uppdatering av dataflöde
+	SPI_transfer_update();
 	//reset timer1
 	TCNT1 = 0;
 }
