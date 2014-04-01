@@ -13,19 +13,15 @@
 #include <util/delay.h>
 
 //Globala variabler
-volatile int	init_transmit;	//För att hålla reda på när vi ska använda buss.
-volatile int	auto_or_manual; //autonomt läge = 0/manuellt läge = 1
-volatile char	recieve_buffer; //Data som tas emot
-volatile char	type_sens;		//typ-byte till protokollet
-volatile char	data_sens;		//data-byte till protokollet
-volatile char	check_sens;		//check-byte till protokollet
-volatile char	type_styr;		//typ-byte till protokollet
-volatile char	data_styr;		//data-byte till protokollet
-volatile char	check_styr;		//ckeck-byte till protokollet
-
-volatile char	type_bt;
-volatile char	data_bt;
-volatile char	check_bt;
+volatile int	init_transmit;	// För att hålla reda på när vi ska använda buss.
+volatile int	auto_or_manual; // autonomt läge = 0/manuellt läge = 1
+volatile char	recieve_buffer; // Data som tas emot
+volatile char	type_sens;		// typ-byte till protokollet
+volatile char	data_sens;		// data-byte till protokollet
+volatile char	check_sens;		// check-byte till protokollet
+volatile char	type_styr;		// typ-byte till protokollet
+volatile char	data_styr;		// data-byte till protokollet
+volatile char	check_styr;		// ckeck-byte till protokollet
 
 	
 // Initiera USART0 för BT kommunikation.
@@ -43,7 +39,7 @@ void USART0_init(long baud_rate)
 // Recieve complete
 void ISR(USART0_RX_vect)
 {
-	
+	recieve_buffer = UDR0;
 }
 
 // Transfer complete
@@ -52,7 +48,10 @@ void ISR(USART0_TX_vect)
 	// UDR0 = register för data att sända / ta emot.
 }
 
-
+void bluetooth_manager()
+{
+	
+}
 
 //Initierar SPI Master
 void SPI_init(void)
@@ -189,11 +188,11 @@ int main(void)
 				Här ska det vara kod för bluetoothsändning
 				av styrbeslut och sensorvärden
 				*/
-				type_styr = ss_styr(type_styr);
+				ss_styr(type_styr);
 				_delay_us(20);
-				data_styr = ss_styr(data_styr);
+				ss_styr(data_styr);
 				_delay_us(20);
-				check_styr = ss_styr(check_creator(type_styr, data_styr));
+				ss_styr(check_creator(type_styr, data_styr));
 				init_transmit = 0;
 			}
 		}
