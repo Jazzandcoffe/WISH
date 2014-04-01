@@ -15,6 +15,7 @@
 //Globala variabler
 volatile int	init_transmit;	// För att hålla reda på när vi ska använda buss.
 volatile int	auto_or_manual; // autonomt läge = 0/manuellt läge = 1
+volatile int	bt_packet;		// type = 0, data = 1
 volatile char	recieve_buffer; // Data som tas emot
 volatile char	type_sens;		// typ-byte till protokollet
 volatile char	data_sens;		// data-byte till protokollet
@@ -37,20 +38,36 @@ void USART0_init(long baud_rate)
 }
 
 // Recieve complete
-void ISR(USART0_RX_vect)
+void ISR(USART0_RXC_vect)
 {
+	// Vänta - tills mottagningen klar och ok att läsa från UDR0
+	while ((UCSR0A & (1 << RXC)) == 0);
 	recieve_buffer = UDR0;
+	//kontrollera mottagen data
+	bluetooth_recieve();
 }
 
-// Transfer complete
-void ISR(USART0_TX_vect)
+void USART0_recieve()
 {
-	// UDR0 = register för data att sända / ta emot.
+	if(bt_packet == 0)
+	{
+		type_styr = recieve_buffer;
+		bt_packet = 1;
+	}
+	else
+	{
+		data_styr = recieve_buffer;
+		bt_packet = 0;
+		init_transmit = 1;
+	}
+		
 }
-
-void bluetooth_manager()
+void USART0_transmit(char to_send)
 {
-	
+	// Vänta tills det är ok att skriva till UDR
+	while((UCSR0A & (1<<UDRE0)) == 0);
+	  
+	UDR0 = to_send;
 }
 
 //Initierar SPI Master
@@ -142,6 +159,7 @@ int main(void)
 	// set Global Interrupt Enable
 	sei();
 	auto_or_manual = 1;
+	bt_packet = 0;
 
 	// loop forever
 	for (;;)
@@ -167,16 +185,17 @@ int main(void)
 						data_styr = ss_sensor(data_sens);
 						_delay_us(20);
 						check_styr = ss_sensor(check_sens);
-						/*
-						Här ska det vara kod för bluetoothsändning
-						av sensorvärden
-						*/
+						
+						if(check_styr == type_styr^data_styr)
+						{
+							USART0_transmit(type_styr);
+							USART0_transmit(data_styr);
+						}
 					}
 					if(check_decoder(type_styr, data_styr, check_styr))
 					{
-						/*
-						 * Här kod för BT sändning av styrbeslut
-						 */
+						USART0_transmit(type_sens);
+						USART0_transmit(data_sens);
 					}
 					init_transmit = 0;
 				}
@@ -184,10 +203,6 @@ int main(void)
 			//Manuellt läge
 			else
 			{
-				/*
-				Här ska det vara kod för bluetoothsändning
-				av styrbeslut och sensorvärden
-				*/
 				ss_styr(type_styr);
 				_delay_us(20);
 				ss_styr(data_styr);
