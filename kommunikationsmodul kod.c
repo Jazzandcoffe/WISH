@@ -13,16 +13,16 @@
 #include <util/delay.h>
 
 //Globala variabler
-volatile int	init_transmit;	// För att hålla reda på när vi ska använda buss.
-volatile int	auto_or_manual; // autonomt läge = 0/manuellt läge = 1
-volatile int	bt_packet;		// type = 0, data = 1
-volatile char	recieve_buffer; // Data som tas emot
-volatile char	type_sens;		// typ-byte till protokollet
-volatile char	data_sens;		// data-byte till protokollet
-volatile char	check_sens;		// check-byte till protokollet
-volatile char	type_styr;		// typ-byte till protokollet
-volatile char	data_styr;		// data-byte till protokollet
-volatile char	check_styr;		// ckeck-byte till protokollet
+volatile  unsigned int init_transmit;	// För att hålla reda på när vi ska använda buss.
+volatile unsigned int auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
+volatile unsigned int bt_packet;		// type = 0, data = 1
+volatile char	recieve_buffer; 	// Data som tas emot
+volatile char	type_sens;			// typ-byte till protokollet
+volatile char	data_sens;			// data-byte till protokollet
+volatile char	check_sens;			// check-byte till protokollet
+volatile char	type_styr;			// typ-byte till protokollet
+volatile char	data_styr;			// data-byte till protokollet
+volatile char	check_styr;			// ckeck-byte till protokollet
 
 	
 // Initiera USART0 för BT kommunikation.
