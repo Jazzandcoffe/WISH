@@ -30,7 +30,6 @@ void SPI_init(void)
 	DDRB = (1<<DDB6);
 	// SPI enable, Slave 
 	SPCR = (1<<SPE)|(1<<SPIE);
-	SPCR = (1<<SPE) | (1<<SPIE);
 }
 
 //initierar timer1
@@ -53,7 +52,6 @@ void SPI_transfer_update()
 		case 0: 
 		type_recieved = recieve_buffer;
 		transmit_buffer = data_transmit;
-		//uppdatera package_counter
 		package_counter = 1;
 		break;
 		
@@ -61,22 +59,22 @@ void SPI_transfer_update()
 		case 1: 
 		data_recieved = recieve_buffer;
 		transmit_buffer = check_transmit;
-		//uppdatera package_counter
 		package_counter = 2;
 		break;
 		
 		// check
-		case 3: 
+		case 2: 
 		check_recieved = recieve_buffer;
 		SPI_control();
 		transmit_buffer = type_transmit;
-		//uppdatera package_counter
 		package_counter = 0;
 	}
 }
 
-
-void update_transmit()
+/*
+ * DENNA SKRIVER STYR
+ */
+void SPI_transmit_update()
 {
 	// type_transmit = nästkommande_sändning; 
 	// data_transmit = nästkommande_sändning;
@@ -84,6 +82,8 @@ void update_transmit()
 }
 
 /* 
+ * DENNA SKRIVER STYR
+ *
  * Kontroll att mottagen data är ok!
  * Samt uppdatering av räknare för data att skicka
  */
@@ -96,7 +96,6 @@ void SPI_control()
 		case 0x00:
 		// example
 		// sensor_1 = data_recieved;
-		// update_transmit_buffer(); 
 		break;
 		case 0x01:
 		break;
@@ -135,22 +134,12 @@ void SPI_control()
 		case 0x12:
 		break;
 		// und so weiter
-		case 0xFF:
+		case 0xXX:
 		// sista typen som ska uppdateras
-		// update_transmit_buffer();
 		break;
-		default:
-		// update_transmit_buffer();
-		break;
-		}		
-		// update_transmit_buffer();			
 		}
-		check_transmit = check_creator(type_transmit, data_transmit);
 	}
-	else
-	{
-		// update_transmit_buffer()
-	}
+	SPI_transmit_update();
 }
 
 // Returnerar en "checksum" = type XOR data.
@@ -172,11 +161,9 @@ unsigned int check_decoder(char type, char data, char check)
 ISR(SPI_STC_vect)
 {
 	recieve_buffer = SPDR;
-	// Uppdatera SPI Data Register för utskiftning.
-	SPDR = transmit_buffer;
-	// kontroll och uppdatering av dataflöde
 	SPI_transfer_update();
-	//reset timer1
+	SPDR = transmit_buffer;
+	// Reset timer1
 	TCNT1 = 0;
 }
 
