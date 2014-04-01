@@ -43,32 +43,19 @@ void timer1_init()
 	TIMSK1 |= (1<<TOIE1);
 }
 
-// Denna funktion hanterar inkommande och utgående data på bussen.
-void SPI_transfer_update()
+// Returnerar en "checksum" = type XOR data.
+char check_creator(char type,char data)
 {
-	switch(package_counter)
-	{
-		// type
-		case 0: 
-		type_recieved = recieve_buffer;
-		transmit_buffer = data_transmit;
-		package_counter = 1;
-		break;
-		
-		// data
-		case 1: 
-		data_recieved = recieve_buffer;
-		transmit_buffer = check_transmit;
-		package_counter = 2;
-		break;
-		
-		// check
-		case 2: 
-		check_recieved = recieve_buffer;
-		SPI_control();
-		transmit_buffer = type_transmit;
-		package_counter = 0;
-	}
+	return type^data;
+}
+
+// check_decoder returnerar 1 om check == type XOR data, annars 0.
+unsigned int check_decoder(char type, char data, char check)
+{
+	char is_check = type^data;
+	if(is_check == check)
+	return 1;
+	else return 0;
 }
 
 /*
@@ -76,8 +63,8 @@ void SPI_transfer_update()
  */
 void SPI_transmit_update()
 {
-	// type_transmit = nästkommande_sändning; 
-	// data_transmit = nästkommande_sändning;
+	type_transmit = 0xAA; //Dummyvärde
+	data_transmit = 0x11; //Dummyvärde
 	check_transmit = check_creator(type_transmit, data_transmit);
 }
 
@@ -134,7 +121,7 @@ void SPI_control()
 		case 0x12:
 		break;
 		// und so weiter
-		case 0xXX:
+		case 0x13:
 		// sista typen som ska uppdateras
 		break;
 		}
@@ -142,19 +129,32 @@ void SPI_control()
 	SPI_transmit_update();
 }
 
-// Returnerar en "checksum" = type XOR data.
-char check_creator(char type,char data)
+// Denna funktion hanterar inkommande och utgående data på bussen.
+void SPI_transfer_update()
 {
-	return type^data;
-}
-
-// check_decoder returnerar 1 om check == type XOR data, annars 0.  
-unsigned int check_decoder(char type, char data, char check)
-{
-	char is_check = type^data;
-	if(is_check == check)
-	return 1;
-	else return 0;
+	switch(package_counter)
+	{
+		// type
+		case 0: 
+		type_recieved = recieve_buffer;
+		transmit_buffer = data_transmit;
+		package_counter = 1;
+		break;
+		
+		// data
+		case 1: 
+		data_recieved = recieve_buffer;
+		transmit_buffer = check_transmit;
+		package_counter = 2;
+		break;
+		
+		// check
+		case 2: 
+		check_recieved = recieve_buffer;
+		SPI_control();
+		transmit_buffer = type_transmit;
+		package_counter = 0;
+	}
 }
 
 // Avbrottsvektorn SPI Serial Transfer Complete
