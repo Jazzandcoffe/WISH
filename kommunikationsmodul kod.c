@@ -37,7 +37,7 @@ void USART0_init(long baud_rate)
 	// Enable receiver and transmitter & their interrupts.
 	UCSR0B = (1<<RXCIE0)|(1<<TXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 	// Set frame format: 8data
-	UCSR0C = (3<<UCSZ00);
+	UCSR0C = (1 << UCSZ00)|(1<<UCSZ01);
 }
 
 // Recieve complete
