@@ -111,9 +111,11 @@ ISR(TIMER1_OVF_vect)
 ISR(INT0_vect)
 {
 	auto_or_manual = auto_or_manual^0x0001;
-	PORTB = (0<<PB4);
-	SPI_transmit(0x00);
-	PORTB = (1<<PB4);
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(check_creator(0x00, 0x00));
 }
 
 /*
