@@ -15,7 +15,7 @@
 //Globala variabler
 volatile uint16_t init_transmit;	// För att hålla reda på när vi ska använda buss.
 volatile uint16_t auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
-volatile uint16_t bt_packet;		// type = 0, data = 1
+volatile uint16_t bt_frame;		// type = 0, data = 1
 volatile char	recieve_buffer; 	// Data som tas emot
 volatile char	type_sens;			// typ-byte till protokollet
 volatile char	data_sens;			// data-byte till protokollet
@@ -46,29 +46,31 @@ void ISR(USART0_RXC_vect)
 	while ((UCSR0A & (1 << RXC)) == 0);
 	recieve_buffer = UDR0;
 	//kontrollera mottagen data
-	bluetooth_recieve();
+	USART0_recieve();
 }
 
 void USART0_recieve()
 {
-	if(bt_packet == 0)
+	if(bt_frame == 0)
 	{
 		type_styr = recieve_buffer;
-		bt_packet = 1;
+		bt_frame = 1;
 	}
 	else
 	{
 		data_styr = recieve_buffer;
-		bt_packet = 0;
+		bt_frame = 0;
 	}
 		
 }
 void USART0_transmit(char to_send)
 {
-	// Vänta tills det är ok att skriva till UDR
-	while((UCSR0A & (1<<UDRE0)) == 0);
-	  
-	UDR0 = to_send;
+	if(PIND & (0<<PD4))
+	{
+		// Vänta tills det är ok att skriva till UDR
+		while((UCSR0A & (1<<UDRE0)) == 0);	  
+		UDR0 = to_send;
+	}
 }
 
 //Initierar SPI Master
@@ -160,12 +162,13 @@ int main(void)
 	// set Global Interrupt Enable
 	sei();
 	auto_or_manual = 1;
-	bt_packet = 0;
+	bt_frame = 0;
+	//RTS låg
+	PORTD = (0<<PD4);
 
 	// loop forever
 	for (;;)
-	{
-		
+	{	
 		if (init_transmit==1)
 		{
 			//Autonomt läge
@@ -179,6 +182,8 @@ int main(void)
 					_delay_us(20);
 					check_sens = ss_sensor();
 					
+					//RTS hög
+					PORTD = (1<<PD4);
 					if(check_decoder(type_sens, data_sens, check_sens))
 					{
 						type_styr = ss_styr(type_sens);
@@ -198,18 +203,25 @@ int main(void)
 						USART0_transmit(type_sens);
 						USART0_transmit(data_sens);
 					}
+					//RTS låg
+					PORTD = (0<<PD4);
 					init_transmit = 0;
 				}
 			}
 			//Manuellt läge
 			else
 			{
+				//RTS hög
+				PORTD = (1<<PD4);
+					
 				ss_styr(type_styr);
 				_delay_us(20);
 				ss_styr(data_styr);
 				_delay_us(20);
 				ss_styr(check_creator(type_styr, data_styr));
 				init_transmit = 0;
+				//RTS låg
+				PORTD = (0<<PD4);
 			}
 		}
 	}
