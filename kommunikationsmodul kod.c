@@ -39,16 +39,6 @@ void USART0_init(long baud_rate)
 	DDRD = (1<<DDD4);
 }
 
-// Recieve complete
-void ISR(USART0_RXC_vect)
-{
-	// Vänta - tills mottagningen klar och ok att läsa från UDR0
-	while ((UCSR0A & (1 << RXC)) == 0);
-	recieve_buffer = UDR0;
-	//kontrollera mottagen data
-	USART0_recieve();
-}
-
 void USART0_recieve()
 {
 	if(bt_frame == 0)
@@ -61,16 +51,26 @@ void USART0_recieve()
 		data_styr = recieve_buffer;
 		bt_frame = 0;
 	}
-		
+	
 }
 void USART0_transmit(char to_send)
 {
 	if(PIND & (0<<PD4))
 	{
 		// Vänta tills det är ok att skriva till UDR
-		while((UCSR0A & (1<<UDRE0)) == 0);	  
+		while((UCSR0A & (1<<UDRE0)) == 0);
 		UDR0 = to_send;
 	}
+}
+
+// Recieve complete
+ISR(USART0_RX_vect)
+{
+	// Vänta - tills mottagningen klar och ok att läsa från UDR0
+	while ((UCSR0A & (1 << RXC0)) == 0);
+	recieve_buffer = UDR0;
+	//kontrollera mottagen data
+	USART0_recieve();
 }
 
 //Initierar SPI Master
@@ -106,16 +106,6 @@ void timer1_init()
 ISR(TIMER1_OVF_vect)
 {
 	init_transmit = 1;
-}
-
-ISR(INT0_vect)
-{
-	auto_or_manual = auto_or_manual^0x0001;
-	ss_styr(0x00);
-	_delay_us(20);
-	ss_styr(0x00);
-	_delay_us(20);
-	ss_styr(check_creator(0x00, 0x00));
 }
 
 /*
@@ -156,6 +146,16 @@ char check_creator(char type,char data)
 	return type^data;
 }
 
+ISR(INT0_vect)
+{
+	auto_or_manual = auto_or_manual^0x0001;
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(check_creator(0x00, 0x00));
+}
+
 int main(void)
 {
 	USART0_init(115200);
@@ -194,7 +194,7 @@ int main(void)
 						_delay_us(20);
 						check_styr = ss_sensor(check_sens);
 						
-						if(check_styr == type_styr^data_styr)
+						if(check_styr == (type_styr^data_styr))
 						{
 							USART0_transmit(type_styr);
 							USART0_transmit(data_styr);
