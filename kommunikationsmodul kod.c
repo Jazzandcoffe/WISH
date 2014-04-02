@@ -13,9 +13,9 @@
 #include <util/delay.h>
 
 //Globala variabler
-volatile  unsigned int init_transmit;	// För att hålla reda på när vi ska använda buss.
-volatile unsigned int auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
-volatile unsigned int bt_packet;		// type = 0, data = 1
+volatile uint16_t init_transmit;	// För att hålla reda på när vi ska använda buss.
+volatile uint16_t auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
+volatile uint16_t bt_packet;		// type = 0, data = 1
 volatile char	recieve_buffer; 	// Data som tas emot
 volatile char	type_sens;			// typ-byte till protokollet
 volatile char	data_sens;			// data-byte till protokollet
@@ -35,6 +35,8 @@ void USART0_init(long baud_rate)
 	UCSR0B = (1<<RXCIE0)|(1<<TXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 	// Set frame format: 8data
 	UCSR0C = (1 << UCSZ00)|(1<<UCSZ01);
+	//PD4 (RTS) output, PD5 (CTS) input
+	DDRD = (1<<DDD4);
 }
 
 // Recieve complete
@@ -58,7 +60,6 @@ void USART0_recieve()
 	{
 		data_styr = recieve_buffer;
 		bt_packet = 0;
-		init_transmit = 1;
 	}
 		
 }
