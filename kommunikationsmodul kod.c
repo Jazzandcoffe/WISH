@@ -24,6 +24,13 @@ volatile char	type_styr;			// typ-byte till protokollet
 volatile char	data_styr;			// data-byte till protokollet
 volatile char	check_styr;			// ckeck-byte till protokollet
 
+
+// Initiera avbrottsport int0
+void INT0_init()
+{
+	EICRA = (1<<ISC01);
+	EIMSK = (1<<INT0);
+}
 	
 // Initiera USART0 för BT kommunikation.
 void USART0_init(long baud_rate)
@@ -55,7 +62,7 @@ void USART0_recieve()
 }
 void USART0_transmit(char to_send)
 {
-	if(PIND & (0<<PD4))
+	if(PIND & (0<<PD5))
 	{
 		// Vänta tills det är ok att skriva till UDR
 		while((UCSR0A & (1<<UDRE0)) == 0);
@@ -156,11 +163,14 @@ ISR(INT0_vect)
 	ss_styr(check_creator(0x00, 0x00));
 }
 
+ISR(USART0_TX_vect){}
+
 int main(void)
 {
 	USART0_init(115200);
 	SPI_init();
 	timer1_init();
+	INT0_init();
 	// set Global Interrupt Enable
 	sei();
 	auto_or_manual = 1;
@@ -170,7 +180,7 @@ int main(void)
 
 	// loop forever
 	for (;;)
-	{	
+	{			
 		if (init_transmit==1)
 		{
 			//Autonomt läge
