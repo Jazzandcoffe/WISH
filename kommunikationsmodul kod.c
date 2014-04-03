@@ -28,7 +28,6 @@ volatile char	check_styr;			// ckeck-byte till protokollet
 // Initiera avbrottsport int0
 void INT0_init()
 {
-	EICRA = (1<<ISC01);
 	EIMSK = (1<<INT0);
 }
 	
@@ -62,7 +61,7 @@ void USART0_recieve()
 }
 void USART0_transmit(char to_send)
 {
-	if(PIND & (0<<PD5))
+	if(!(PIND & (1<<PD5)))
 	{
 		// Vänta tills det är ok att skriva till UDR
 		while((UCSR0A & (1<<UDRE0)) == 0);
@@ -112,7 +111,7 @@ void timer1_init()
 //Avbrottsvektorn till timer overflow
 ISR(TIMER1_OVF_vect)
 {
-	init_transmit = 1;
+		init_transmit = 1;
 }
 
 /*
@@ -155,12 +154,13 @@ char check_creator(char type,char data)
 
 ISR(INT0_vect)
 {
-	auto_or_manual = auto_or_manual^0x0001;
-	ss_styr(0x00);
-	_delay_us(20);
-	ss_styr(0x00);
-	_delay_us(20);
-	ss_styr(check_creator(0x00, 0x00));
+		auto_or_manual = 0;
+		//Skicka kommando för autonomt läge
+		ss_styr(0x00);
+		_delay_us(20);
+		ss_styr(0x00);
+		_delay_us(20);
+		ss_styr(check_creator(0x00, 0x00));
 }
 
 ISR(USART0_TX_vect){}
@@ -174,6 +174,14 @@ int main(void)
 	// set Global Interrupt Enable
 	sei();
 	auto_or_manual = 1;
+	
+	//Skicka kommando för manuellt läge.
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(0x00);
+	_delay_us(20);
+	ss_styr(check_creator(0x00, 0x00));
+	
 	bt_frame = 0;
 	//RTS låg
 	PORTD = (0<<PD4);
