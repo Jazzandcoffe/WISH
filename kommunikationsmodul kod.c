@@ -28,6 +28,7 @@ volatile char	check_styr;			// ckeck-byte till protokollet
 // Initiera avbrottsport int0
 void INT0_init()
 {
+	EICRA = (1<<ISC01);
 	EIMSK = (1<<INT0);
 }
 	
@@ -202,8 +203,6 @@ int main(void)
 					_delay_us(20);
 					check_sens = ss_sensor();
 					
-					//RTS hög
-					PORTD = (1<<PD4);
 					if(check_decoder(type_sens, data_sens, check_sens))
 					{
 						type_styr = ss_styr(type_sens);
@@ -223,25 +222,18 @@ int main(void)
 						USART0_transmit(type_sens);
 						USART0_transmit(data_sens);
 					}
-					//RTS låg
-					PORTD = (0<<PD4);
 					init_transmit = 0;
 				}
 			}
 			//Manuellt läge
 			else
-			{
-				//RTS hög
-				PORTD = (1<<PD4);
-					
+			{		
 				ss_styr(type_styr);
 				_delay_us(20);
 				ss_styr(data_styr);
 				_delay_us(20);
 				ss_styr(check_creator(type_styr, data_styr));
 				init_transmit = 0;
-				//RTS låg
-				PORTD = (0<<PD4);
 			}
 		}
 	}
