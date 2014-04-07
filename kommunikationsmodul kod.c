@@ -113,6 +113,7 @@ void timer1_init()
 ISR(TIMER1_OVF_vect)
 {
 		init_transmit = 1;
+		bt_frame = 0;
 }
 
 /*
