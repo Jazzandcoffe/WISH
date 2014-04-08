@@ -15,7 +15,6 @@
 //Globala variabler
 volatile uint16_t init_transmit;	// För att hålla reda på när vi ska använda buss.
 volatile uint16_t auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
-volatile uint16_t bt_frame;		// type = 0, data = 1
 volatile char	recieve_buffer; 	// Data som tas emot
 volatile char	type_sens;			// typ-byte till protokollet
 volatile char	data_sens;			// data-byte till protokollet
@@ -23,6 +22,8 @@ volatile char	check_sens;			// check-byte till protokollet
 volatile char	type_styr;			// typ-byte till protokollet
 volatile char	data_styr;			// data-byte till protokollet
 volatile char	check_styr;			// ckeck-byte till protokollet
+volatile char	bt_buffer[2];		// Buffer för mottagen bluetoothdata
+volatile uint16_t i;				// index till bt_buffer
 
 
 // Initiera avbrottsport int0
@@ -48,17 +49,12 @@ void USART0_init(long baud_rate)
 
 void USART0_recieve()
 {
-	if(bt_frame == 0)
+	if(i > 1)
 	{
-		type_styr = recieve_buffer;
-		bt_frame = 1;
+		type_styr = bt_buffer[0];
+		data_styr = bt_buffer[1];
+		i = 0;
 	}
-	else
-	{
-		data_styr = recieve_buffer;
-		bt_frame = 0;
-	}
-	
 }
 void USART0_transmit(char to_send)
 {
@@ -75,7 +71,8 @@ ISR(USART0_RX_vect)
 {
 	// Vänta - tills mottagningen klar och ok att läsa från UDR0
 	while ((UCSR0A & (1 << RXC0)) == 0);
-	recieve_buffer = UDR0;
+	bt_buffer[i] = UDR0;
+	i++;
 	//kontrollera mottagen data
 	USART0_recieve();
 }
@@ -113,7 +110,6 @@ void timer1_init()
 ISR(TIMER1_OVF_vect)
 {
 		init_transmit = 1;
-		bt_frame = 0;
 }
 
 /*
@@ -160,9 +156,9 @@ ISR(INT0_vect)
 		//Skicka kommando för autonomt läge
 		ss_styr(0x00);
 		_delay_us(20);
-		ss_styr(0x00);
+		ss_styr(0xFF);
 		_delay_us(20);
-		ss_styr(check_creator(0x00, 0x00));
+		ss_styr(check_creator(0x00, 0xFF));
 }
 
 ISR(USART0_TX_vect){}
@@ -177,16 +173,16 @@ int main(void)
 	sei();
 	auto_or_manual = 1;
 	
+	i = 0;
+	//RTS låg
+	PORTD = (0<<PD4);
+	
 	//Skicka kommando för manuellt läge.
 	ss_styr(0x00);
 	_delay_us(20);
 	ss_styr(0x00);
 	_delay_us(20);
 	ss_styr(check_creator(0x00, 0x00));
-	
-	bt_frame = 0;
-	//RTS låg
-	PORTD = (0<<PD4);
 
 	// loop forever
 	for (;;)
