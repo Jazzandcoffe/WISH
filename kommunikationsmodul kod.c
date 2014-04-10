@@ -113,10 +113,10 @@ ISR(TIMER1_OVF_vect)
 }
 
 /*
-* SS för sensor, vi skickar aldrig,
-* så denna funktion läser vad som
-* sensor lagt på bussen
-*/
+ * SS för sensor, vi skickar aldrig,
+ * så denna funktion läser vad som
+ * sensor lagt på bussen
+ */
 char ss_sensor()
 {
 	PORTB = (0 << PB3);
@@ -126,9 +126,9 @@ char ss_sensor()
 }
 
 /*
-* SS för styr, vi skickar sensordata,
-* tar emot styrbeslut.(som ska skickas via BT)
-*/
+ * SS för styr, vi skickar sensordata,
+ * tar emot styrbeslut.(som ska skickas via BT)
+ */
 char ss_styr(char to_send)
 {
 	PORTB = (0 << PB4);
@@ -225,6 +225,15 @@ int main(void)
 			//Manuellt läge
 			else
 			{		
+				//Testcode for bus test with sensor module
+				// start
+				type_sens = ss_sensor();
+				_delay_us(20);
+				data_sens = ss_sensor();
+				_delay_us(20);
+				check_sens = ss_sensor();
+				// end
+				
 				ss_styr(type_styr);
 				_delay_us(20);
 				ss_styr(data_styr);
