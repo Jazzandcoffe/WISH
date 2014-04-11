@@ -82,8 +82,8 @@ void SPI_init(void)
 {
 	//spi pins on port b MOSI SCK,SS1,SS2 outputs
 	DDRB = ((1<<DDB7)|(1<<DDB5)|(1<<DDB4)|(1<<DDB3));
-	// SPI enable, Master, f/4
-	SPCR = ((1<<SPE)|(1<<MSTR));
+	// SPI enable, Master, f/16
+	SPCR = ((1<<SPE)|(1<<MSTR)|(1<<SPR0));
 }
 
 //Transmit function. to_send på MOSI. Return MISO.
@@ -138,7 +138,7 @@ char ss_styr(char to_send)
 }
 
 // check_decoder returnerar 1 om check == type XOR data, annars 0.
-unsigned int check_decoder(char type, char data, char check)
+char check_decoder(char type, char data, char check)
 {
 	char is_check = type^data;
 	return (check == is_check);
@@ -202,6 +202,9 @@ int main(void)
 					
 					if(check_decoder(type_sens, data_sens, check_sens))
 					{
+						USART0_transmit(type_sens);
+						USART0_transmit(data_sens);
+						
 						type_styr = ss_styr(type_sens);
 						_delay_us(20);
 						data_styr = ss_styr(data_sens);
@@ -213,11 +216,6 @@ int main(void)
 							USART0_transmit(type_styr);
 							USART0_transmit(data_styr);
 						}
-					}
-					if(check_decoder(type_sens, data_sens, check_sens))
-					{
-						USART0_transmit(type_sens);
-						USART0_transmit(data_sens);
 					}
 				}
 				init_transmit = 0;
