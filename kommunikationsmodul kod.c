@@ -219,8 +219,8 @@ int main(void)
 						USART0_transmit(type_sens);
 						USART0_transmit(data_sens);
 					}
-					init_transmit = 0;
 				}
+				init_transmit = 0;
 			}
 			//Manuellt läge
 			else
