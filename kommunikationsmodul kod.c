@@ -119,9 +119,9 @@ ISR(TIMER1_OVF_vect)
 */
 char ss_sensor()
 {
-	PORTB = (0 << PB3);
+	PORTB = PORTB & 0b11110111;
 	recieve_buffer = SPI_transmit(0x00);
-	PORTB = (1 << PB3);
+	PORTB = PORTB | 0b00001000;
 	return recieve_buffer;
 }
 
@@ -131,9 +131,9 @@ char ss_sensor()
 */
 char ss_styr(char to_send)
 {
-	PORTB = (0 << PB4);
+	PORTB = PORTB & 0b11101111;
 	recieve_buffer = SPI_transmit(to_send);
-	PORTB = (1 << PB4);
+	PORTB = PORTB | 0b00010000;
 	return recieve_buffer;
 }
 
@@ -204,9 +204,9 @@ int main(void)
 					{
 						type_styr = ss_styr(type_sens);
 						_delay_us(20);
-						data_styr = ss_sensor(data_sens);
+						data_styr = ss_styr(data_sens);
 						_delay_us(20);
-						check_styr = ss_sensor(check_sens);
+						check_styr = ss_styr(check_sens);
 						
 						if(check_decoder(type_styr, data_styr, check_styr))
 						{
