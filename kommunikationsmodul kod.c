@@ -22,7 +22,7 @@ volatile char	check_sens;			// check-byte till protokollet
 volatile char	type_styr;			// typ-byte till protokollet
 volatile char	data_styr;			// data-byte till protokollet
 volatile char	check_styr;			// ckeck-byte till protokollet
-volatile char	bt_buffer[2];		// Buffer för mottagen bluetoothdata
+volatile char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
 volatile uint16_t i;				// index till bt_buffer
 
 
@@ -51,8 +51,8 @@ void USART0_recieve()
 {
 	if(i > 1)
 	{
-		type_styr = bt_buffer[i-1];
-		data_styr = bt_buffer[i];
+		type_styr = bt_buffer[i-2];
+		data_styr = bt_buffer[i-1];
 		i = i-2;
 		if(type_styr == 0x00)
 		{
