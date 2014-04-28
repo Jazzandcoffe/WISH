@@ -51,9 +51,32 @@ void USART0_recieve()
 {
 	if(i > 1)
 	{
-		type_styr = bt_buffer[0];
-		data_styr = bt_buffer[1];
-		i = 0;
+		type_styr = bt_buffer[i-1];
+		data_styr = bt_buffer[i];
+		i = i-2;
+		if(type_styr == 0x00)
+		{
+			if(data_styr == 0x00)
+			{
+				auto_or_manual = 1;
+				//Skicka kommando för manuellt läge.
+				ss_styr(0x00);
+				_delay_us(20);
+				ss_styr(0x00);
+				_delay_us(20);
+				ss_styr(check_creator(0x00, 0x00));
+			}
+			else if(data_styr == 0xFF) 
+			{
+				auto_or_manual = 0;
+				//Skicka kommando för autonomt läge
+				ss_styr(0x00);
+				_delay_us(20);
+				ss_styr(0xFF);
+				_delay_us(20);
+				ss_styr(check_creator(0x00, 0xFF));	
+			}
+		}
 	}
 }
 void USART0_transmit(char to_send)
@@ -73,8 +96,6 @@ ISR(USART0_RX_vect)
 	while ((UCSR0A & (1 << RXC0)) == 0);
 	bt_buffer[i] = UDR0;
 	i++;
-	//kontrollera mottagen data
-	USART0_recieve();
 }
 
 //Initierar SPI Master
@@ -82,8 +103,8 @@ void SPI_init(void)
 {
 	//spi pins on port b MOSI SCK,SS1,SS2 outputs
 	DDRB = ((1<<DDB7)|(1<<DDB5)|(1<<DDB4)|(1<<DDB3));
-	// SPI enable, Master, f/16
-	SPCR = ((1<<SPE)|(1<<MSTR)|(1<<SPR0));
+	// SPI enable, Master, f/4 
+	SPCR = ((1<<SPE)|(1<<MSTR));
 }
 
 //Transmit function. to_send på MOSI. Return MISO.
@@ -229,7 +250,22 @@ int main(void)
 				_delay_us(20);
 				ss_styr(check_creator(type_styr, data_styr));
 				init_transmit = 0;
+				for (int i=0;i<10;i++)
+				{
+					type_sens = ss_sensor();
+					_delay_us(20);
+					data_sens = ss_sensor();
+					_delay_us(20);
+					check_sens = ss_sensor();
+					if(check_decoder(type_sens, data_sens, check_sens))
+					{
+						USART0_transmit(type_sens);
+						USART0_transmit(data_sens);
+					}
+				}
 			}
+			//kontrollera mottagen data
+	        USART0_recieve();
 		}
 	}
 }
