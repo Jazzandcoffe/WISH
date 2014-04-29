@@ -17,11 +17,10 @@ volatile uint16_t init_transmit;	// För att hålla reda på när vi ska använd
 volatile uint16_t auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
 volatile char	recieve_buffer; 	// Data som tas emot
 volatile char	type_sens;			// typ-byte till protokollet
-volatile char	data_sens;			// data-byte till protokollet
-volatile char	check_sens;			// check-byte till protokollet
+//volatile char	data_sens;			// data-byte till protokollet
+volatile char	check;				// check-byte till protokollet
 volatile char	type_styr;			// typ-byte till protokollet
-volatile char	data_styr;			// data-byte till protokollet
-volatile char	check_styr;			// ckeck-byte till protokollet
+volatile char	data[32];			// data-byte till protokollet
 volatile char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
 volatile uint16_t i;				// index till bt_buffer
 
@@ -49,14 +48,14 @@ void USART0_init(long baud_rate)
 
 void USART0_recieve()
 {
-	if(i > 1)
+	while(i > 1)
 	{
 		type_styr = bt_buffer[i-2];
-		data_styr = bt_buffer[i-1];
+		data[type_styr] = bt_buffer[i-1];
 		i = i-2;
 		if(type_styr == 0x00)
 		{
-			if(data_styr == 0x00)
+			if(data[type_styr] == 0x00)
 			{
 				auto_or_manual = 1;
 				//Skicka kommando för manuellt läge.
@@ -66,7 +65,7 @@ void USART0_recieve()
 				_delay_us(20);
 				ss_styr(check_creator(0x00, 0x00));
 			}
-			else if(data_styr == 0xFF) 
+			else if(data[type_styr] == 0xFF) 
 			{
 				auto_or_manual = 0;
 				//Skicka kommando för autonomt läge
@@ -103,7 +102,7 @@ void SPI_init(void)
 {
 	//spi pins on port b MOSI SCK,SS1,SS2 outputs
 	DDRB = ((1<<DDB7)|(1<<DDB5)|(1<<DDB4)|(1<<DDB3));
-	// SPI enable, Master, f/4 
+	// SPI enable, Master, f/4    (1<<SPR0) för f/16
 	SPCR = ((1<<SPE)|(1<<MSTR));
 }
 
@@ -213,29 +212,29 @@ int main(void)
 			//Autonomt läge
 			if(auto_or_manual == 0)
 			{
-				for (int i=0;i<10;i++)
+				for (int i = 0; i < 20; i++)
 				{
 					type_sens = ss_sensor();
 					_delay_us(20);
-					data_sens = ss_sensor();
+					data[type_sens] = ss_sensor();
 					_delay_us(20);
-					check_sens = ss_sensor();
+					check = ss_sensor();
 					
-					if(check_decoder(type_sens, data_sens, check_sens))
+					if(check_decoder(type_sens, data[type_sens], check))
 					{
 						USART0_transmit(type_sens);
-						USART0_transmit(data_sens);
+						USART0_transmit(data[type_sens]);
 						
 						type_styr = ss_styr(type_sens);
 						_delay_us(20);
-						data_styr = ss_styr(data_sens);
+						data[type_styr] = ss_styr(data[type_sens]);
 						_delay_us(20);
-						check_styr = ss_styr(check_sens);
+						check = ss_styr(check);
 						
-						if(check_decoder(type_styr, data_styr, check_styr))
+						if(check_decoder(type_styr, data[type_styr], check))
 						{
 							USART0_transmit(type_styr);
-							USART0_transmit(data_styr);
+							USART0_transmit(data[type_styr]);
 						}
 					}
 				}
@@ -244,25 +243,30 @@ int main(void)
 			//Manuellt läge
 			else
 			{		
-				ss_styr(type_styr);
-				_delay_us(20);
-				ss_styr(data_styr);
-				_delay_us(20);
-				ss_styr(check_creator(type_styr, data_styr));
-				init_transmit = 0;
-				for (int i=0;i<10;i++)
+				for (type_styr = 1; type_styr < 4; type_styr++)
+				{
+					ss_styr(type_styr);
+					_delay_us(20);
+					ss_styr(data[type_styr]);
+					_delay_us(20);
+					ss_styr(check_creator(type_styr, data[type_styr]));
+					_delay_us(20);
+				}
+				
+				for (int i=0;i<20;i++)
 				{
 					type_sens = ss_sensor();
 					_delay_us(20);
-					data_sens = ss_sensor();
+					data[type_sens] = ss_sensor();
 					_delay_us(20);
-					check_sens = ss_sensor();
-					if(check_decoder(type_sens, data_sens, check_sens))
+					check = ss_sensor();
+					if(check_decoder(type_sens, data[type_sens], check))
 					{
 						USART0_transmit(type_sens);
-						USART0_transmit(data_sens);
+						USART0_transmit(data[type_sens]);
 					}
 				}
+				init_transmit = 0;
 			}
 			//kontrollera mottagen data
 	        USART0_recieve();
