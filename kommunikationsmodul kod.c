@@ -243,7 +243,7 @@ int main(void)
 			//Manuellt läge
 			else
 			{		
-				for (type_styr = 1; type_styr < 4; type_styr++)
+				for (type_styr = 1; type_styr < 5; type_styr++)
 				{
 					ss_styr(type_styr);
 					_delay_us(20);
