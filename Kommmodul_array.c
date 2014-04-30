@@ -17,10 +17,8 @@ volatile uint16_t		init_transmit;		// För att hålla reda på när vi ska använda b
 volatile uint16_t		auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
 volatile unsigned char	recieve_buffer; 	// Data som tas emot
 volatile unsigned char	type_sens;			// typ-byte till protokollet
-volatile unsigned char	check;				// check-byte till protokollet
 volatile unsigned char	type_styr;			// typ-byte till protokollet
-volatile unsigned char	data_styr;
-volatile unsigned char	data_sens;
+volatile unsigned char	check;				// check-byte till protokollet
 volatile unsigned char	data[32];			// data-byte till protokollet
 volatile unsigned char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
 volatile uint16_t		i;					// index till bt_buffer
@@ -72,7 +70,7 @@ void SPI_init(void)
 	//spi pins on port b MOSI SCK,SS1,SS2 outputs
 	DDRB = ((1<<DDB7)|(1<<DDB5)|(1<<DDB4)|(1<<DDB3));
 	// SPI enable, Master, (1<<SPR0) för f/16
-	SPCR = ((1<<SPE)|(1<<MSTR)|(1<<SPR0));
+	SPCR = ((1<<SPE)|(1<<MSTR));
 }
 
 //Transmit function. to_send på MOSI. Return MISO.
@@ -146,6 +144,14 @@ void USART0_recieve()
 		type_styr = bt_buffer[i-2];
 		data[type_styr] = bt_buffer[i-1];
 		i = i-2;
+		if(type_styr == 0x04)
+		{
+			ss_styr(0x04);
+			_delay_us(20);
+			ss_styr(0x00);
+			_delay_us(20);
+			ss_styr(check_creator(0x04, 0x00));
+		}
 		if(type_styr == 0x00)
 		{
 			if(data[type_styr] == 0x00)
@@ -245,16 +251,14 @@ int main(void)
 			//Manuellt läge
 			else
 			{
-				for (unsigned char n = 1; n < 5; n++)
+				for (unsigned char n = 1; n < 4; n++)
 				{
 					type_styr = n;
-					data_styr = data[type_styr];
 					ss_styr(type_styr);
 					_delay_us(20);
-					ss_styr(data_styr);
+					ss_styr(data[type_styr]);
 					_delay_us(20);
-					check = check_creator(type_styr, data_styr);
-					ss_styr(check);
+					ss_styr(check_creator(type_styr, data[type_styr]));
 					_delay_us(20);
 				}
 				
