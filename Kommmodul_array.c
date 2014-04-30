@@ -1,9 +1,9 @@
 /*
 *  Kommunikationsmodul.c
 *
-*  Created: 3/26/2014 1:42:57 PM
-*  Author:	Herman Molinder		hermo276@student.liu.se
-*			Tore Landén			torla816@student.liu.se
+*  Created:	04/30/2014 1:42:57 PM
+*  Author:		Herman Molinder		hermo276@student.liu.se
+*				Tore Landén			torla816@student.liu.se
 */
 
 #define F_CPU 14745600UL
@@ -11,11 +11,12 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
+#include <avr/sleep.h>
 
 //Globala variabler
 volatile uint16_t		init_transmit;		// För att hålla reda på när vi ska använda buss.
 volatile uint16_t		auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
-volatile unsigned char	recieve_buffer; 	// Data som tas emot
+volatile unsigned char	spi_recieve_buffer; 	// Data som tas emot
 volatile unsigned char	type_sens;			// typ-byte till protokollet
 volatile unsigned char	type_styr;			// typ-byte till protokollet
 volatile unsigned char	check;				// check-byte till protokollet
@@ -81,8 +82,7 @@ unsigned char SPI_transmit(unsigned char to_send)
 	;
 	return SPDR;
 }
-
-//initierar timer1
+//initierar timer1 (28Hz)
 void timer1_init()
 {
 	//Timer prescaler = 8
@@ -107,9 +107,9 @@ ISR(TIMER1_OVF_vect)
 unsigned char ss_sensor()
 {
 	PORTB = PORTB & 0b11110111;
-	recieve_buffer = SPI_transmit(0x00);
+	spi_recieve_buffer = SPI_transmit(0x00);
 	PORTB = PORTB | 0b00001000;
-	return recieve_buffer;
+	return spi_recieve_buffer;
 }
 
 /*
@@ -119,9 +119,9 @@ unsigned char ss_sensor()
 unsigned char ss_styr(unsigned char to_send)
 {
 	PORTB = PORTB & 0b11101111;
-	recieve_buffer = SPI_transmit(to_send);
+	spi_recieve_buffer = SPI_transmit(to_send);
 	PORTB = PORTB | 0b00010000;
-	return recieve_buffer;
+	return spi_recieve_buffer;
 }
 
 // check_decoder returnerar 1 om check == type XOR data, annars 0.
@@ -139,11 +139,14 @@ unsigned char check_creator(unsigned char type, unsigned char data)
 
 void USART0_recieve()
 {
+	// Hantering av data som lagrats i en buffer. All data hanteras och buffern töms.
 	while(i > 1)
 	{
 		type_styr = bt_buffer[i-2];
 		data[type_styr] = bt_buffer[i-1];
 		i = i-2;
+		
+		// Nödstopp
 		if(type_styr == 0x04)
 		{
 			ss_styr(0x04);
@@ -152,6 +155,8 @@ void USART0_recieve()
 			_delay_us(20);
 			ss_styr(check_creator(0x04, 0x00));
 		}
+		
+		// Manuell/Autonom
 		if(type_styr == 0x00)
 		{
 			if(data[type_styr] == 0x00)
@@ -215,70 +220,74 @@ int main(void)
 	// loop forever
 	for (;;)
 	{
-		if (init_transmit==1)
+		//Autonomt läge
+		if(auto_or_manual == 0)
 		{
-			//Autonomt läge
-			if(auto_or_manual == 0)
+			// Uppdatera sensordata och vidarebefordra till styr och klient.
+			for (int n = 0; n < 20; n++)
 			{
-				for (int n = 0; n < 20; n++)
-				{
-					type_sens = ss_sensor();
-					_delay_us(20);
-					data[type_sens] = ss_sensor();
-					_delay_us(20);
-					check = ss_sensor();
-					
-					if(check_decoder(type_sens, data[type_sens], check))
-					{
-						USART0_transmit(type_sens);
-						USART0_transmit(data[type_sens]);
-						
-						type_styr = ss_styr(type_sens);
-						_delay_us(20);
-						data[type_styr] = ss_styr(data[type_sens]);
-						_delay_us(20);
-						check = ss_styr(check);
-						
-						if(check_decoder(type_styr, data[type_styr], check))
-						{
-							USART0_transmit(type_styr);
-							USART0_transmit(data[type_styr]);
-						}
-					}
-				}
-				init_transmit = 0;
-			}
-			//Manuellt läge
-			else
-			{
-				for (unsigned char n = 1; n < 4; n++)
-				{
-					type_styr = n;
-					ss_styr(type_styr);
-					_delay_us(20);
-					ss_styr(data[type_styr]);
-					_delay_us(20);
-					ss_styr(check_creator(type_styr, data[type_styr]));
-					_delay_us(20);
-				}
+				type_sens = ss_sensor();
+				_delay_us(20);
+				data[type_sens] = ss_sensor();
+				_delay_us(20);
+				check = ss_sensor();
 				
-				for (int n = 0; n < 20; n++)
+				if(check_decoder(type_sens, data[type_sens], check))
 				{
-					type_sens = ss_sensor();
+					USART0_transmit(type_sens);
+					USART0_transmit(data[type_sens]);
+					
+					type_styr = ss_styr(type_sens);
 					_delay_us(20);
-					data[type_sens] = ss_sensor();
+					data[type_styr] = ss_styr(data[type_sens]);
 					_delay_us(20);
-					check = ss_sensor();
-					if(check_decoder(type_sens, data[type_sens], check))
+					check = ss_styr(check);
+					
+					if(check_decoder(type_styr, data[type_styr], check))
 					{
-						USART0_transmit(type_sens);
-						USART0_transmit(data[type_sens]);
+						USART0_transmit(type_styr);
+						USART0_transmit(data[type_styr]);
 					}
 				}
-				init_transmit = 0;
 			}
-			//kontrollera mottagen data
-			USART0_recieve();
+		}
+		//Manuellt läge
+		else
+		{
+			// Uppdatera styrparametrar n = 1:4 - sänt till styr
+			for (unsigned char n = 1; n < 4; n++)
+			{
+				type_styr = n;
+				ss_styr(type_styr);
+				_delay_us(20);
+				ss_styr(data[type_styr]);
+				_delay_us(20);
+				ss_styr(check_creator(type_styr, data[type_styr]));
+				_delay_us(20);
+			}
+			// Uppdatera och vidarebefordra sensordata till klient.
+			for (int n = 0; n < 20; n++)
+			{
+				type_sens = ss_sensor();
+				_delay_us(20);
+				data[type_sens] = ss_sensor();
+				_delay_us(20);
+				check = ss_sensor();
+				if(check_decoder(type_sens, data[type_sens], check))
+				{
+					USART0_transmit(type_sens);
+					USART0_transmit(data[type_sens]);
+				}
+			}
+		}
+		init_transmit = 0;
+		// Hantera bt_buffer och uppdatera styrbeslut
+		USART0_recieve();
+		while(init_transmit == 0)
+		{
+			sleep_enable();
+			sleep_cpu();
+			sleep_disable();
 		}
 	}
 }
