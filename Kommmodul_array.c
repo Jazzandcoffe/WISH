@@ -228,7 +228,7 @@ int main(void)
 	// Initiera processorn
 	InitProcessor();	
 	
-	// loop forever
+	// loop forever (main loop)
 	for (;;)
 	{
 		//Autonomt läge
