@@ -1,5 +1,5 @@
 /*
-*  Kommunikationsmodul.c
+*  Komm.modul array.c
 *
 *  Created:	04/30/2014 1:42:57 PM
 *  Author:		Herman Molinder		hermo276@student.liu.se
@@ -16,13 +16,14 @@
 //Globala variabler
 volatile uint16_t		init_transmit;		// För att hålla reda på när vi ska använda buss.
 volatile uint16_t		auto_or_manual; 	// autonomt läge = 0/manuellt läge = 1
-volatile unsigned char	spi_recieve_buffer; 	// Data som tas emot
+volatile uint16_t		i;					// index till bt_buffer
 volatile unsigned char	type_sens;			// typ-byte till protokollet
 volatile unsigned char	type_styr;			// typ-byte till protokollet
 volatile unsigned char	check;				// check-byte till protokollet
+volatile unsigned char	spi_recieve_buffer; // Data som tas emot
 volatile unsigned char	data[32];			// data-byte till protokollet
 volatile unsigned char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
-volatile uint16_t		i;					// index till bt_buffer
+
 
 
 // Initiera avbrottsport int0
@@ -196,27 +197,37 @@ ISR(INT0_vect)
 
 ISR(USART0_TX_vect){}
 
-int main(void)
+void InitProcessor()
 {
+	//Initiera USART för BT-kommunikation
 	USART0_init(115200);
+	//RTS låg
+	PORTD = (0<<PD4);
+	//Initiera SPI-bussen 
 	SPI_init();
+	//Initiera Timer1 för aktivering i 28Hz
 	timer1_init();
+	//Initiera INT0 för avbrott
 	INT0_init();
 	// set Global Interrupt Enable
 	sei();
+	//Starta i manuellt läge
 	auto_or_manual = 1;
-	
-	i = 0;
-	//RTS låg
-	PORTD = (0<<PD4);
-	
 	//Skicka kommando för manuellt läge.
 	ss_styr(0x00);
 	_delay_us(20);
 	ss_styr(0x00);
 	_delay_us(20);
 	ss_styr(check_creator(0x00, 0x00));
+	//Index för BT-buffer
+	i = 0;
+}
 
+int main(void)
+{
+	// Initiera processorn
+	InitProcessor();	
+	
 	// loop forever
 	for (;;)
 	{
