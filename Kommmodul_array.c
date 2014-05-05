@@ -21,7 +21,7 @@ volatile unsigned char	type_sens;			// typ-byte till protokollet
 volatile unsigned char	type_styr;			// typ-byte till protokollet
 volatile unsigned char	check;				// check-byte till protokollet
 volatile unsigned char	spi_recieve_buffer; // Data som tas emot
-volatile unsigned char	data[32];			// data-byte till protokollet
+volatile unsigned char	data[34];			// data-byte till protokollet
 volatile unsigned char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
 
 
@@ -156,9 +156,27 @@ void USART0_recieve()
 			_delay_us(20);
 			ss_styr(check_creator(0x04, 0x00));
 		}
+		//Kp - regleringsparameter
+		else if(type_styr == 0x21)
+		{
+			ss_styr(type_styr);
+			_delay_us(20);
+			ss_styr(data[type_styr]);
+			_delay_us(20);
+			ss_styr(check_creator(type_styr, data[type_styr]));
+		}
+		//Kd - regleringsparameter
+		else if(type_styr == 0x22)
+		{
+			ss_styr(type_styr);
+			_delay_us(20);
+			ss_styr(data[type_styr]);
+			_delay_us(20);
+			ss_styr(check_creator(type_styr, data[type_styr]));
+		}
 		
 		// Manuell/Autonom
-		if(type_styr == 0x00)
+		else if(type_styr == 0x00)
 		{
 			if(data[type_styr] == 0x00)
 			{
@@ -203,7 +221,7 @@ void InitProcessor()
 	USART0_init(115200);
 	//RTS låg
 	PORTD = (0<<PD4);
-	//Initiera SPI-bussen 
+	//Initiera SPI-bussen
 	SPI_init();
 	//Initiera Timer1 för aktivering i 28Hz
 	timer1_init();
@@ -226,7 +244,7 @@ void InitProcessor()
 int main(void)
 {
 	// Initiera processorn
-	InitProcessor();	
+	InitProcessor();
 	
 	// loop forever (main loop)
 	for (;;)
@@ -235,7 +253,7 @@ int main(void)
 		if(auto_or_manual == 0)
 		{
 			// Uppdatera sensordata och vidarebefordra till styr och klient.
-			for (int n = 0; n < 20; n++)
+			for (int n = 0; n < 27; n++)
 			{
 				type_sens = ss_sensor();
 				_delay_us(20);
@@ -253,13 +271,12 @@ int main(void)
 					data[type_styr] = ss_styr(data[type_sens]);
 					_delay_us(20);
 					check = ss_styr(check);
-					
-					if(check_decoder(type_styr, data[type_styr], check))
-					{
-						USART0_transmit(type_styr);
-						USART0_transmit(data[type_styr]);
-					}
 				}
+			}
+			if(check_decoder(type_styr, data[type_styr], check))
+			{
+				USART0_transmit(type_styr);
+				USART0_transmit(data[type_styr]);
 			}
 		}
 		//Manuellt läge
@@ -277,7 +294,7 @@ int main(void)
 				_delay_us(20);
 			}
 			// Uppdatera och vidarebefordra sensordata till klient.
-			for (int n = 0; n < 20; n++)
+			for (int n = 0; n < 27; n++)
 			{
 				type_sens = ss_sensor();
 				_delay_us(20);
