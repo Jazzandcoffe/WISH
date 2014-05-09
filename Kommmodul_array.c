@@ -1,7 +1,7 @@
 /*
 *  Komm.modul array.c
 *
-*  Created:	04/30/2014 1:42:57 PM
+*  Created:		04/30/2014 1:42:57 PM
 *  Author:		Herman Molinder		hermo276@student.liu.se
 *				Tore Landén			torla816@student.liu.se
 */
@@ -21,7 +21,7 @@ volatile unsigned char	type_sens;			// typ-byte till protokollet
 volatile unsigned char	type_styr;			// typ-byte till protokollet
 volatile unsigned char	check;				// check-byte till protokollet
 volatile unsigned char	spi_recieve_buffer; // Data som tas emot
-volatile unsigned char	data[34];			// data-byte till protokollet
+volatile unsigned char	data[35];			// data-byte till protokollet
 volatile unsigned char	bt_buffer[32];		// Buffer för mottagen bluetoothdata
 
 
@@ -174,7 +174,15 @@ void USART0_recieve()
 			_delay_us(20);
 			ss_styr(check_creator(type_styr, data[type_styr]));
 		}
-		
+		// sensorfeedback!				///////ej implementerat.
+		else if(type_styr == 0x23)
+		{
+			ss_styr(type_styr);
+			_delay_us(20);
+			ss_styr(data[type_styr]);
+			_delay_us(20);
+			ss_styr(check_creator(type_styr, data[type_styr]));
+		}
 		// Manuell/Autonom
 		else if(type_styr == 0x00)
 		{
